@@ -7,12 +7,10 @@ avatar_ctx=avatar_canvas.getContext("2d");
 var mx=0;//水平移动
 var my=0;//垂直移动
 var r=0;//旋转次数
-var formerX=0;//拖动前点坐标
-var formerY=0;
-var nowX=0;//拖动后点坐标
-var nowY=0;
+var p1={},p2={};
 var zrate=1;//上次缩放倍率
 var dis=10;//微移的距离
+var moveSign=true;
 $("#avatar_file").on("change",function () {
     var avatar_file =document.getElementById("avatar_file");
     var file=avatar_file.files[0];
@@ -30,7 +28,7 @@ $("#avatar_file").on("change",function () {
         var img =document.getElementById("img");
         img.onload=function(){
             //console.log("载入中(^_^)");
-            size=320;
+            size=800;
             avatar_canvas.width=size;
             avatar_canvas.height=size;
             avatar_ctx.translate(size/2,size/2);
@@ -114,23 +112,35 @@ function p(e){
 
 function addEvent(){
     /*画布拖动事件绑定*/
-    $("#avatar_canvas").on("mousedown touchstart",function(e) {
-        formerX=e.pageX;
-        formerY=e.pageY;
-        $("#avatar_canvas").on("mousemove touchmove",function (e) {
-            nowX=e.pageX;
-            nowY=e.pageY;
-            move(nowX-formerX,nowY-formerY);
-            formerX=nowX;
-            formerY=nowY;
-        });
-    }).on("mouseup touchend",function(e) {
-        nowX=e.pageX;
-        nowY=e.pageY;
-        move(nowX-formerX,nowY-formerY);
-        $("#avatar_canvas").off("mousemove touchmove");
-    }).on("mouseleave touchcancel",function () {
-        $("#avatar_canvas").off("mousemove touchmove");
+    $("#avatar_canvas").on("touchstart",function(e) {
+        p1.x=e.touches[0].pageX;
+        p1.y=e.touches[0].pageY;
+        e.touches[1]&&(p2.x=e.touches[1].pageX);
+        e.touches[1]&&(p2.y=e.touches[1].pageY);
+        (e.touches.length==1)&&(moveSign=true);
+        (e.touches.length==2)&&(moveSign=false);
+        e.preventDefault();
+    }).on("touchmove",function (e) {
+        var t1={},t2={};
+        t1.x=p1.x;
+        t1.y=p1.y;
+        p2.x&&(t2.x=p2.x);
+        p2.y&&(t2.y=p2.y);
+        p1.x=e.touches[0].pageX;
+        p1.y=e.touches[0].pageY;
+        e.touches[1]&&(p2.x=e.touches[1].pageX);
+        e.touches[1]&&(p2.y=e.touches[1].pageY);
+        (e.touches.length==1)&&moveSign&&move(p1.x-t1.x,p1.y-t1.y);
+        var r;
+        var point2=Math.pow((p2.y-p1.y),2)+ Math.pow((p2.x-p1.x),2);
+        var temp2=Math.pow((t2.y-t1.y),2)+ Math.pow((t2.x-t1.x),2);
+        t2.x&&(r=Math.sqrt(point2/temp2));
+        r&&(e.touches.length==2)&&scale(r,r);
+        e.preventDefault();
+    }).on("touchend",function(e) {
+
+    }).on("touchcancel",function () {
+
     });
     /*缩放*/
     $("#avatar_zoom").on("input change",function () {
@@ -166,12 +176,14 @@ function addEvent(){
     });
     /*微 缩放*/
     $("#avatar_zoomin").on("click",function () {
-        $("#avatar_zoom").val(parseInt($("#avatar_zoom").val())+1);
-        $("#avatar_zoom").change();
+        // $("#avatar_zoom").val(parseInt($("#avatar_zoom").val())+1);
+        // $("#avatar_zoom").change();
+        scale(1.01,1.01);
     });
     $("#avatar_zoomout").on("click",function () {
-        $("#avatar_zoom").val(parseInt($("#avatar_zoom").val())-1);
-        $("#avatar_zoom").change();
+        // $("#avatar_zoom").val(parseInt($("#avatar_zoom").val())-1);
+        // $("#avatar_zoom").change();
+        scale(0.99,0.99);
     });
     $("#avatar_more").on("click",function () {
         $('#more_tools').toggle();
@@ -180,7 +192,10 @@ function addEvent(){
     });
     $("#avatar_save").on("click",function () {
         var dataurl=avatar_canvas.toDataURL('image/png');
-        console.log(dataurl);
+        // var w=window.open('about:blank','image from canvas');
+        var w=window.open('','','');
+        w.document.write("<img src='"+dataurl+"' style='width: 100%;left: 0;top:0;' alt='avatar'/>");
+        //console.log(dataurl);
     })
 }
 
